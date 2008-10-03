@@ -21,14 +21,18 @@ class Cisco < Net::Telnet
   # set variable to new pw if one is passed in and send it to the device. once the prompt is returned we are 'logged in'
   def login(password = nil)
     @login = password || @login
-    raise ArgumentError.new("No password given!") unless @login
+    raise ArgumentError.new("No login password given!") unless @login
     puts @login
     waitfor(@prompt)
     @logged_in = true
   end
 
-  def enable(password)
-    
+  def enable(password = nil)
+    @enable = password || @enable
+    raise ArgumentError.new("No enable password given!") unless @login
+    puts @enable
+    waitfor(@prompt)
+    @enabled = true
   end
   
   
