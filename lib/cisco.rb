@@ -13,10 +13,10 @@ class Cisco < Net::Telnet
   # * Port (Integer): Specify the port to connect on. Default is 23.
   #
   # A block can be given to be yielded status messages about the connection attempt.
-  def initialize(host, login = nil, enable = nil, debug = false, port = 23)
+  def initialize(host, loginpw = nil, enablepw = nil, debug = false, port = 23)
     @host = host
-    @login = login
-    @enable = enable
+    @login = loginpw
+    @enable = enablepw
     @debug = debug
     @port = port
     @logged_in = false
@@ -101,6 +101,12 @@ class Cisco < Net::Telnet
     end
   end
   
+  # Redefined to give us easy debug output.
+  def puts(txt)
+    debug_out(txt)
+    super(txt)
+  end
+  
   # Turns on debug output.
   def debug_on
     @debug = true
@@ -117,10 +123,6 @@ class Cisco < Net::Telnet
     $stdout.puts output if @debug
   end
   
-  # Redefined to give us easy debug output.
-  def puts(txt)
-    debug_out(txt)
-    super(txt)
-  end
+  
 
 end
