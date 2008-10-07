@@ -5,8 +5,8 @@ module Cisco
   class Cisco < Net::Telnet
 
     class CiscoError < StandardError
-    end
-
+    end    
+    
     # Our constructor opens the connection and attempts to login if a password is specified here.
     # The options that can be used are as follows:
     # * Host (String): This is required. Can contain either an IP address or a domain name.
@@ -102,12 +102,6 @@ module Cisco
           waitfor(args) {|recvdata| debug_out(recvdata)}
         end
       end
-    end
-
-    # Redefined to give us easy debug output.
-    def puts(txt)
-      debug_out(txt)
-      super(txt)
     end
 
     # Turns on debug output.
