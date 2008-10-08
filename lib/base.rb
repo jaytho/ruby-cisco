@@ -24,7 +24,7 @@ module Cisco
       @port = port
       @logged_in = false
       @enabled = false
-      @prompt = /[#>] \z/n
+      @prompt = /[#>]\z/n
       if block_given?
         super("Host" => @host, "Prompt" => @prompt, "Port" => port) {|statmsg| yield statmsg}
       else
@@ -33,7 +33,11 @@ module Cisco
       expect("Password:")
       login if @login
     end
-
+    
+    # This is meant to be redefined in subclasses to send commands like 'terminal length 0' upon connecting.
+    def extra_init
+    end
+    
     # Returns true or false depending on whether our login attempt appears to have succeeded.
     def logged_in?
       return @logged_in
@@ -44,6 +48,12 @@ module Cisco
       return @enabled
     end
 
+    # document this
+    def cmd(txt)
+      puts(txt)
+      expect(@prompt)
+    end
+    
     # This uses the login password given in the constructor if one is not passed here.
     # If one is passed here, it will take the place of the previous one and be stored for future use.
     # This method sends the password and then waits to see a '>' prompt from the device.
@@ -55,6 +65,7 @@ module Cisco
       puts @login
       expect(">")
       @logged_in = true
+      extra_init
     end
 
     # Same idea as login. Sends the enable password and waits for '#' prompt.
@@ -103,7 +114,7 @@ module Cisco
         end
       end
     end
-
+    
     # Turns on debug output.
     def debug_on
       @debug = true
@@ -117,7 +128,7 @@ module Cisco
     private
     # if @debug is true, send passed text to stdout
     def debug_out(output)
-      $stdout.puts output if @debug
+      $stdout.print output if @debug
     end
 
   end
