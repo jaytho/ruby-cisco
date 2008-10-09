@@ -8,7 +8,7 @@ module Cisco
     end
   end
   
-  class Cisco < Base
+  class Base < Cisco
     
     attr_reader :info, :ints
     

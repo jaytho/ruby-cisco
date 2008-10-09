@@ -5,7 +5,7 @@ module Cisco
   class CiscoError < StandardError
   end
 
-  class Base < Net::Telnet   
+  class Cisco < Net::Telnet   
     
     # Our constructor opens the connection and attempts to login if a password is specified here.
     # The options that can be used are as follows:
