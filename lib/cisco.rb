@@ -7,10 +7,10 @@ module Cisco
   
   class Cisco < Base
     
-    attr_reader :hw, :sw, :ints
+    attr_reader :info, :ints
     
     
-    
+
   end
   
 end
