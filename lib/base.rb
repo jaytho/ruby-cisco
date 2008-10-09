@@ -48,7 +48,7 @@ module Cisco
       return @enabled
     end
 
-    # document this
+    # document this and add block passing
     def cmd(txt)
       puts(txt)
       expect(@prompt)
