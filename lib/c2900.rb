@@ -9,21 +9,29 @@ module Cisco
     end
     
     def refresh_info
-      @hw = DetailSet.new
-      @sw = DetailSet.new
+      @info = DetailSet.new
       data = cmd("sh ver").split("\n")
-      @sw.ios = data[2]
-      @sw.compile = data[4]
-      @sw.rom = data[7]
-      @sw.update = data[9]
-      @sw.return = data[10]
-      @sw.image = data[11]
-      @sw.freeze
-      
-      @hw.device = data[14]
-      @hw.procid = data[15]
-      @hw.reboot = data[16]
-      
+      @info.ios = data[2]
+      @info.compile = data[4]
+      @info.rom = data[7]
+      @info.uptime = data[9]
+      @info.return = data[10]
+      @info.image = data[11]
+      @info.device = data[14]
+      @info.procid = data[15]
+      @info.last_reset = data[16]
+      @info.mem = data[23]
+      @info.mac = data[24]
+      @info.mobo_num = data[25]
+      @info.ps_num = data[26]
+      @info.mobo_serial = data[27]
+      @info.ps_serial = data[28]
+      @info.model_rev = data[29]
+      @info.mobo_rev = data[30]
+      @info.model = data[31]
+      @info.serial = data[32]
+      @info.confreg = data[33]
+      @info.freeze
     end
 
   end
