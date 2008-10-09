@@ -1,15 +1,16 @@
 module Cisco
   
   
-  class C2900 < Cisco
+  class C2900 < Base
     
     def extra_init
       cmd("terminal length 0")
       refresh_info
     end
     
+    # change this to use regexps
     def refresh_info
-      @info = DetailSet.new
+      @info = Group.new
       data = cmd("sh ver").split("\n")
       @info.ios = data[2]
       @info.compile = data[4]
