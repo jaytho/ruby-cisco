@@ -1,9 +1,12 @@
 Ruby-Cisco
 ==========
-This tool aims to provide functionality similar to Perl's Net::Telnet::Cisco 
-module, for easy communication with Cisco devices. In addition, I would like
-to provide subclasses to retrieve, present and set configuration parameters 
-in an OO fashion. 
+This tool aims to provide transport-agnostic functionality similar to Perl's 
+Net::Telnet::Cisco module, for easy communication with Cisco devices. In addition, 
+I would like to provide subclasses to retrieve, present and set configuration 
+parameters in an OO fashion.
+
+I will be implementing both Telnet and SSH support, through delegation in the 
+base class. If anyone else has a transport they would like to add feel free.
 
 As I begin here, I know little of the differences between various Cisco 
 devices and their configuration parameters. At first, I will be writing a 
@@ -18,5 +21,5 @@ writing solid, reusable, (and publicly examined) code, so please bear with me.
 Anyone wanting to help is more than welcome - just send me an email or hit 
 me up on IRC.
 
---jakecdouglas@gmail.com
---yakischloba on Freenode
+jakecdouglas@gmail.com
+yakischloba on Freenode
