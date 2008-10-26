@@ -24,7 +24,8 @@ module Cisco
       @port = port
       @logged_in = false
       @enabled = false
-      @prompt = /[#>]\z/n
+      @confmode = false
+      @prompt = /[#>]\s?\z/n
       if block_given?
         super("Host" => @host, "Prompt" => @prompt, "Port" => port) {|statmsg| yield statmsg}
       else
@@ -32,6 +33,7 @@ module Cisco
       end
       expect("Password:")
       login if @login
+      extra_init
     end
     
     # This is meant to be redefined in subclasses to send commands like 'terminal length 0' upon connecting.
@@ -50,8 +52,9 @@ module Cisco
 
     # document this and add block passing
     def cmd(txt)
+      raise CiscoError.new("Not logged in!") unless logged_in?
       puts(txt)
-      expect(@prompt)
+      return expect(@prompt)
     end
     
     # This uses the login password given in the constructor if one is not passed here.
