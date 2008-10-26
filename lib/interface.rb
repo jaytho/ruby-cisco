@@ -2,29 +2,26 @@ module Cisco
   
   class Interface
     
-    attr_reader :status, :stats, :mac
+    attr_reader :name, :status, :stats, :mac
     
     # We pass a parent device into the constructor, as well as the text to parse out it's details.
-    def initialize(parent, textary)
+    def initialize(parent, name)
       raise CiscoError.new("Parent must be an instance of Cisco::Base.") unless parent.kind_of?(Cisco::Base)
       @parent = parent
-      set_info(textary)
+      @name = name
+      refresh
     end
     
-    
-    
-    def refresh_info
+    def refresh
       # do something here to pull relevant text from @parent
-      set_info(textary)
+      set_info(text)
     end
     
     private
     
-    def set_info(textary)
+    def set_info(text)
       #parse out our details and set them on ourself
-      textary.delete_at(0)
-      @status = textary[1]
-      @mac = textary[2].slice(/....\.....\...../)
+      @mac = text.slice(/....\.....\...../)
     end
     
   end
