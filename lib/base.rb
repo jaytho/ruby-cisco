@@ -17,8 +17,8 @@ module Cisco
     attr_reader :info, :ints, :host
     
     def initialize(host, loginpw, enablepw, transport = Telnet, options = {})
-      super(transport.new(host, options))
       @prompt = /[#>]\s?\z/n
+      super(transport.new(host, options))
       [@logged_in, @enabled, @confmode].each {|var| var = false}
       expect("Password:")
       login if @login

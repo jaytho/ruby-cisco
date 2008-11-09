@@ -13,12 +13,13 @@ module Cisco
     # * Port (Integer): Specify the port to connect on. Default is 23.
     #
     # A block can be given to be yielded status messages about the connection attempt.
-    def initialize(host, options)
+    def initialize(host, options = {:port => 23})
       @host = host
+      @port = options[:port]
       if block_given?
-        super("Host" => @host, "Prompt" => @prompt, "Port" => port) {|statmsg| yield statmsg}
+        super("Host" => @host, "Prompt" => @prompt, "Port" => @port) {|statmsg| yield statmsg}
       else
-        super("Host" => @host, "Prompt" => @prompt, "Port" => port)
+        super("Host" => @host, "Prompt" => @prompt, "Port" => @port)
       end
     end
 
