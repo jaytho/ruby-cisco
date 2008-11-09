@@ -54,6 +54,12 @@ module Cisco
         end
       end
     end
+    
+    private
+    # if @debug is true, send passed text to stdout
+    def debug_out(output)
+      $stdout.print output if @debug
+    end
 
   end
 
