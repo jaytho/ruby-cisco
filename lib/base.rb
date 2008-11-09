@@ -12,15 +12,17 @@ module Cisco
     end
   end
 
-  class Base < SimpleDelegator
+  class Base
     
     attr_reader :info, :ints, :host
     
     def initialize(host, loginpw, enablepw, transport = Telnet, options = {})
       @prompt = /[#>]\s?\z/n
-      super(transport.new(host, options))
+      @login = loginpw
+      @enable = enablepw
+      @transport = transport.new(host, options)
       [@logged_in, @enabled, @confmode].each {|var| var = false}
-      expect("Password:")
+      @transport.expect("Password:")
       login if @login
       extra_init
     end
@@ -29,6 +31,12 @@ module Cisco
     def extra_init
     end
 
+        # document this and add block passing
+    def cmd(txt)
+      @transport.puts(txt)
+      return @transport.expect(@prompt)
+    end
+    
     # This uses the login password given in the constructor if one is not passed here.
     # If one is passed here, it will take the place of the previous one and be stored for future use.
     # This method sends the password and then waits to see a '>' prompt from the device.
@@ -37,20 +45,20 @@ module Cisco
       raise CiscoError.new("It looks like we're already logged in!") if logged_in?
       @login = password || @login
       raise ArgumentError.new("No login password given!") unless @login
-      puts @login
-      expect(">")
+      @transport.puts @login
+      @transport.expect(@prompt)
       @logged_in = true
     end
     
-    # Same idea as login. Sends the enable password and waits for '#' prompt.
+    # Same idea as login. Sends 'enable', then the enable password and waits for '#' prompt.
     # enabled? will return true if this succeeds.
     def enable(password = nil)
       @enable = password || @enable
       raise ArgumentError.new("No enable password given!") unless @enable
-      puts "enable"
-      expect("Password:")
-      puts @enable
-      expect("#")
+      @transport.puts "enable"
+      @transport.expect("Password:")
+      @transport.puts @enable
+      @transport.expect("#")
       @enabled = true
     end
     
@@ -79,19 +87,19 @@ module Cisco
     # * twice if enabled 
     # and closes the socket.
     def close
-      (puts "exit" and @enabled = false) if @enabled
-      (puts "exit" and @logged_in = false) if @logged_in
+      (@transport.puts "exit" and @enabled = false) if @enabled
+      (@transport.puts "exit" and @logged_in = false) if @logged_in
       super
     end
     
     # Turns on debug output.
     def debug_on
-      @debug = true
+      @transport.debug_on
     end
 
     # Turns off debug output.
     def debug_off
-      @debug = false
+      @transport.debug_off
     end
 
   end

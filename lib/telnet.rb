@@ -13,21 +13,14 @@ module Cisco
     # * Port (Integer): Specify the port to connect on. Default is 23.
     #
     # A block can be given to be yielded status messages about the connection attempt.
-    def initialize(host, options = {:port => 23})
+    def initialize(host, options = {})
       @host = host
-      @port = options[:port]
+      @port = options[:port] || 23
       if block_given?
-        super("Host" => @host, "Prompt" => @prompt, "Port" => @port) {|statmsg| yield statmsg}
+        super("Host" => @host, "Port" => @port) {|statmsg| yield statmsg}
       else
-        super("Host" => @host, "Prompt" => @prompt, "Port" => @port)
+        super("Host" => @host, "Port" => @port)
       end
-    end
-
-    # document this and add block passing
-    def cmd(txt)
-      raise CiscoError.new("Not logged in!") unless logged_in?
-      puts(txt)
-      return expect(@prompt)
     end
 
     # This is an easier to use version of waitfor(). It can be passed a String or Regexp to be used as the match
@@ -55,6 +48,14 @@ module Cisco
       end
     end
     
+    def	debug_on
+    	@debug = true
+    end
+    
+    def	debug_off
+    	@debug = false
+    end
+
     private
     # if @debug is true, send passed text to stdout
     def debug_out(output)

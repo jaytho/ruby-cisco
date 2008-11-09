@@ -5,8 +5,7 @@ Net::Telnet::Cisco module, for easy communication with Cisco devices. In additio
 I would like to provide subclasses to retrieve, present and set configuration 
 parameters in an OO fashion.
 
-I will be implementing both Telnet and SSH support, through delegation in the 
-base class. If anyone else has a transport they would like to add feel free.
+I will be implementing both Telnet and SSH support.
 
 As I begin here, I know little of the differences between various Cisco 
 devices and their configuration parameters. At first, I will be writing a 
