@@ -55,10 +55,10 @@ module Cisco
     def enable(password = nil)
       @enable = password || @enable
       raise ArgumentError.new("No enable password given!") unless @enable
-      @transport.puts "enable"
-      @transport.expect("Password:")
-      @transport.puts @enable
-      @transport.expect("#")
+      puts "enable"
+      expect("Password:")
+      puts @enable
+      expect("#")
       @enabled = true
     end
     
@@ -82,13 +82,21 @@ module Cisco
       return @enabled
     end
     
+    def	puts(txt)
+    	@transport.puts(txt)
+    end
+    
+    def expect(txt)
+    	@transport.expect(txt)
+    end
+    
     # This logs out of the device by sending 'exit': 
     # * once if logged in 
     # * twice if enabled 
     # and closes the socket.
     def close
-      (@transport.puts "exit" and @enabled = false) if @enabled
-      (@transport.puts "exit" and @logged_in = false) if @logged_in
+      (puts "exit" and @enabled = false) if @enabled
+      (puts "exit" and @logged_in = false) if @logged_in
       super
     end
     
