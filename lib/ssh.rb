@@ -7,20 +7,28 @@ module Cisco
 
   class SSH
 
-    attr_reader :chan, :ssh, :thread
+    attr_reader :chan, :ssh, :thread, :buf
 
     def initialize(*args)
-      @buf = ""
-      @thread = Thread.new {
-        @loop = true
-        @ssh = Net::SSH.start(*args)
-        @chan = @ssh.open_channel {|chan| chan.send_channel_request("shell"); chan.on_data {|ch, data| @buf << data; $stdout.puts data} }
+      @buf = []
+      @ssh = Net::SSH.start(*args)
+      @loop = true
+      #@thread = Thread.new {
+      	@ssh.open_channel do |chan|
+      	chan.on_data {|ch, data| @buf << data; $stdout.puts data }
+      	chan.send_channel_request("shell");
+      	chan.send_data("terminal length 0\nsh ver\n")
+      end
         @ssh.loop { @loop }
-      }
+      #}
     end
 
-    def puts(data)
-      @chan.send_data(data)
+    def puts(txt)
+      @ssh.open_channel do |chan|
+      	chan.send_channel_request("shell");
+      	chan.on_data {|ch, data| @buf << data; $stdout.puts data }
+      	chan.send_data(txt)
+      end
     end
 
     # Look at Telnet and IO's expect to see how this is done
