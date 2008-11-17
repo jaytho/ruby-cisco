@@ -1,5 +1,4 @@
 require 'ostruct'
-require 'delegate'
 
 module Cisco
     
@@ -97,7 +96,7 @@ module Cisco
     def close
       (puts "exit" and @enabled = false) if @enabled
       (puts "exit" and @logged_in = false) if @logged_in
-      super
+      @transport.close
     end
     
     # Turns on debug output.
