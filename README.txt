@@ -7,6 +7,10 @@ parameters in an OO fashion.
 
 I will be implementing both Telnet and SSH support.
 
+PLEASE NOTE: Basic Telnet functionality should currently work, but SSH
+is completely busted at this time. Please do not even try to use it unless
+you know what you're doing better than I do.
+
 As I begin here, I know little of the differences between various Cisco 
 devices and their configuration parameters. At first, I will be writing a 
 class for Catalyst 2900 series switches, since they are something I have
