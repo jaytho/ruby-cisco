@@ -8,9 +8,10 @@ module Cisco
   class SSH
 
 	# Just so we can mess with these as we need to for debugging...
-    attr_reader :ssh, :thread, :inbuf, :outbuf
+    attr_reader :ssh, :thread, :inbuf, :outbuf, :result
 
     def initialize(*args)
+    	@first = true
 		@result = @inbuf = @outbuf = ""
 		# Tells our thread to continue running
 		@threadgo = true
@@ -33,13 +34,14 @@ module Cisco
 						# The idea is that this checks the @outbuf on every pass of the event loop
 						# to see if anything new needs to be sent out. I don't think it is happening
 						# correctly right now, though I just did this and haven't tested it much yet.
-						ch.on_process {|chn| @sem.synchronize { chn.send_data(@outbuf) unless @outbuf.empty? } }
+						ch.on_process {|chn| @sem.synchronize { (chn.send_data(@outbuf) && @outbuf = "") unless @outbuf.empty? } }
 					end
 	  	    	end
 	  	    	# This is _supposed_ to loop forever, even channel is not active.
 				ssh.loop { true }
 			end
 		}
+		run
     end
 
 	# All incoming data should be passed to this method through Channel#on_data
@@ -47,9 +49,13 @@ module Cisco
     	# append data to buffer...
 		@inbuf << data
 		# For debugging purposes
-		STDOUT.puts data
-		# If the buffer contains our prompt
-		if @inbuf =~ @prompt
+		#STDOUT.puts data
+		check_prompt
+    end
+    
+    def	check_prompt
+   		# If the buffer contains our prompt
+    	if @inbuf =~ @prompt
 			# assign it to the @result
 			@result = @inbuf
 			# reset the buffer
@@ -80,10 +86,10 @@ module Cisco
 
     # Look at Telnet and IO's expect to see how this is done.
     # This is a bit wierd but would probably work if everything else did.
-    def expect(prompt)
+    def expect()
 		Timeout::timeout(10) {
 			while true
-				(return @result && @result = "") if @result =~ prompt
+				(return @result && @result = "") if @result =~ @prompt
 			end
 		}
     end
