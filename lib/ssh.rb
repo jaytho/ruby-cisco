@@ -3,17 +3,18 @@ require 'net/ssh'
 
 class Net::SSH::Connection::Channel
 
-	def cmd(cmd, prompt = /[#>]\s?\z/n, &block)
-		self[:cmdbuf] << [cmd + "\n", Regexp.new(prompt), block]
+	def cmd(cmd, prompt = nil, &block)
+		self[:cmdbuf] << [cmd + "\n", prompt, block]
 	end
 
-	def enable(password)
-		cmd("enable", "Password:")
-		cmd(password)
+	def enable(password, pwprompt = nil)
+		old = self[:prompt]
+		cmd("enable", pwprompt || "Password:")
+		cmd(password, old)
 	end
 	
 	def check_and_send
-		if self[:inbuf] =~ @prompt
+		if self[:inbuf] =~ self[:prompt]
 			self[:results] << self[:inbuf]
 			self[:inbuf] = ""
 			if self[:cmdbuf].any?
@@ -26,16 +27,18 @@ class Net::SSH::Connection::Channel
 	
 	def	send_next
 		cmd = self[:cmdbuf].shift
-		@prompt = cmd[1]
+		self[:prompt] = Regexp.new(cmd[1]) if cmd[1]
 		self[:outblock] = cmd[2] if cmd[2]
 		send_data(cmd.first)
 	end
 	
-end
+end # class Net::SSH::Connection::Channel
 
 module Cisco
 
 	class SSH
+	
+		attr_accessor :prompt
 	
 		def initialize(*args)
 			@sshargs = args
@@ -46,19 +49,18 @@ module Cisco
 			@ssh.open_channel do |chan|
 				chan.send_channel_request("shell") do |ch, success|
 					if !success
-						raise "Could not open shell channel"
+						abort "Could not open shell channel"
 					else
-						ch[:cmdbuf] = []
-						ch[:results] = []
+						ch[:cmdbuf], ch[:results] = [], []
 						ch[:inbuf] = ""
+						ch[:prompt] = @prompt
 						ch.on_close {|ch| @results = ch[:results] }
-						ch.on_data do |ch, data|
-							ch[:outblock].call(data) if ch[:outblock]
-							ch[:inbuf] << data
-							ch.check_and_send
+						ch.on_data do |chn, data|
+							chn[:outblock].call(data) if chn[:outblock]
+							chn[:inbuf] << data
+							chn.check_and_send
 						end
 						yield ch
-						ch.send_next
 					end
 				end
 			end
