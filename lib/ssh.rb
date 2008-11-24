@@ -14,6 +14,7 @@ module Cisco
 		  @prompt  = options[:prompt] || /[#>]\s?\z/n
 		  @sshargs = options[:directargs] || [@host, @user, {:password => @password}]
 		  @pwprompt = "Password:"
+		  @cmdbuf, @results = [], []
 		end
 
 		def cmd(cmd, prompt = nil, &block)
@@ -32,7 +33,6 @@ module Cisco
 		end
 		
 		def run
-			@cmdbuf, @results = [], []
 			@inbuf = ""
 			@ssh = Net::SSH.start(*@sshargs)
 			@ssh.open_channel do |chan|
@@ -45,13 +45,15 @@ module Cisco
 							@inbuf << data
 							check_and_send(chn)
 						end
-            			@extra_init.call(self) if @extra_init
-						yield self
+						@extra_init.call(self) if @extra_init
+						(@cmdbuf = [] and yield self) if block_given?
 					end
 				end
 			end
 			@ssh.loop
-			return @results
+			results = @results
+			@cmdbuf, @results = [], []
+			return results
 		end
 		
 		private
