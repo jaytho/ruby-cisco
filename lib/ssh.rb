@@ -38,14 +38,22 @@ module Cisco
 
 	class SSH
 	
-		attr_accessor :prompt
+		attr_accessor :prompt, :loginpw
 	
-		def initialize(*args)
-			@sshargs = args
+		def initialize(options)
+		  @host    = options[:host]
+		  @user    = options[:user]
+		  @loginpw = options[:loginpw]
+		  @prompt  = options[:prompt]
+		  @sshargs = options[:directargs] || [@host, @user, :password => @loginpw]
 		end
 
+		def extra_init(&block)
+		  @extra_init = block
+		end
+		
 		def run
-			@ssh = Net::SSH.start(*@sshargs)
+			@ssh = Net::SSH.start(*@sshargs, &block)
 			@ssh.open_channel do |chan|
 				chan.send_channel_request("shell") do |ch, success|
 					if !success
@@ -60,7 +68,8 @@ module Cisco
 							chn[:inbuf] << data
 							chn.check_and_send
 						end
-						yield ch
+            @extra_init.call(ch) if @extra_init
+						block.call(ch)
 					end
 				end
 			end
