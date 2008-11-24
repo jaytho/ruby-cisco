@@ -13,6 +13,7 @@ module Cisco
 		  @password = options[:password]
 		  @prompt  = options[:prompt] || /[#>]\s?\z/n
 		  @sshargs = options[:directargs] || [@host, @user, {:password => @password}]
+		  @pwprompt = "Password:"
 		end
 
 		def cmd(cmd, prompt = nil, &block)
@@ -20,32 +21,10 @@ module Cisco
 		end
 		
 		def enable(password, pwprompt = nil)
-			@pwprompt = pwprompt || @pwprompt || "Password:"
+			@pwprompt = pwprompt || @pwprompt
 			old = @prompt
 			cmd("enable", @pwprompt)
 			cmd(password, old)
-		end
-		
-		def check_and_send(chn)
-			if @inbuf =~ @prompt
-				@results << @inbuf
-				@inbuf = ""
-				if @cmdbuf.any?
-					send_next(chn)
-				else
-					chn.close
-				end
-			elsif (@inbuf =~ Regexp.new(@pwprompt) and @prompt != Regexp.new(@pwprompt))
-				chn.close
-				raise ArgumentError.new("Enable password was not correct.")
-			end
-		end
-
-		def	send_next(chn)
-			cmd = @cmdbuf.shift
-			@prompt = Regexp.new(cmd[1]) if cmd[1]
-			@outblock = cmd[2] if cmd[2]
-			chn.send_data(cmd.first)
 		end
 		
 		def extra_init(&block)
@@ -73,6 +52,30 @@ module Cisco
 			end
 			@ssh.loop
 			return @results
+		end
+		
+		private
+		
+		def check_and_send(chn)
+			if @inbuf =~ @prompt
+				@results << @inbuf
+				@inbuf = ""
+				if @cmdbuf.any?
+					send_next(chn)
+				else
+					chn.close
+				end
+			elsif (@inbuf =~ Regexp.new(@pwprompt) and @prompt != Regexp.new(@pwprompt))
+				chn.close
+				raise ArgumentError.new("Enable password was not correct.")
+			end
+		end
+
+		def	send_next(chn)
+			cmd = @cmdbuf.shift
+			@prompt = Regexp.new(cmd[1]) if cmd[1]
+			@outblock = cmd[2] if cmd[2]
+			chn.send_data(cmd.first)
 		end
 
 	end # class SSH
