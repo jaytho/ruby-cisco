@@ -1,75 +1,73 @@
 require 'rubygems'
 require 'net/ssh'
 
-class Net::SSH::Connection::Channel
-
-	def cmd(cmd, prompt = nil, &block)
-		self[:cmdbuf] << [cmd + "\n", prompt, block]
-	end
-
-	def enable(password, pwprompt = nil)
-		old = self[:prompt]
-		cmd("enable", pwprompt || "Password:")
-		cmd(password, old)
-	end
-	
-	def check_and_send
-		if self[:inbuf] =~ self[:prompt]
-			self[:results] << self[:inbuf]
-			self[:inbuf] = ""
-			if self[:cmdbuf].any?
-				send_next
-			else
-				close
-			end
-		end
-	end
-	
-	def	send_next
-		cmd = self[:cmdbuf].shift
-		self[:prompt] = Regexp.new(cmd[1]) if cmd[1]
-		self[:outblock] = cmd[2] if cmd[2]
-		send_data(cmd.first)
-	end
-	
-end # class Net::SSH::Connection::Channel
-
 module Cisco
 
 	class SSH
 	
-		attr_accessor :prompt, :loginpw
+		attr_accessor :prompt, :password, :host
 	
 		def initialize(options)
 		  @host    = options[:host]
 		  @user    = options[:user]
-		  @loginpw = options[:loginpw]
-		  @prompt  = options[:prompt]
-		  @sshargs = options[:directargs] || [@host, @user, :password => @loginpw]
+		  @password = options[:password]
+		  @prompt  = options[:prompt] || /[#>]\s?\z/n
+		  @sshargs = options[:directargs] || [@host, @user, {:password => @password}]
 		end
 
+		def cmd(cmd, prompt = nil, &block)
+			@cmdbuf << [cmd + "\n", prompt, block]
+		end
+		
+		def enable(password, pwprompt = nil)
+			@pwprompt = pwprompt || @pwprompt || "Password:"
+			old = @prompt
+			cmd("enable", @pwprompt)
+			cmd(password, old)
+		end
+		
+		def check_and_send(chn)
+			if @inbuf =~ @prompt
+				@results << @inbuf
+				@inbuf = ""
+				if @cmdbuf.any?
+					send_next(chn)
+				else
+					chn.close
+				end
+			elsif (@inbuf =~ Regexp.new(@pwprompt) and @prompt != Regexp.new(@pwprompt))
+				chn.close
+				raise ArgumentError.new("Enable password was not correct.")
+			end
+		end
+
+		def	send_next(chn)
+			cmd = @cmdbuf.shift
+			@prompt = Regexp.new(cmd[1]) if cmd[1]
+			@outblock = cmd[2] if cmd[2]
+			chn.send_data(cmd.first)
+		end
+		
 		def extra_init(&block)
 		  @extra_init = block
 		end
 		
 		def run
-			@ssh = Net::SSH.start(*@sshargs, &block)
+			@cmdbuf, @results = [], []
+			@inbuf = ""
+			@ssh = Net::SSH.start(*@sshargs)
 			@ssh.open_channel do |chan|
 				chan.send_channel_request("shell") do |ch, success|
 					if !success
 						abort "Could not open shell channel"
 					else
-						ch[:cmdbuf], ch[:results] = [], []
-						ch[:inbuf] = ""
-						ch[:prompt] = @prompt
-						ch.on_close {|ch| @results = ch[:results] }
 						ch.on_data do |chn, data|
-							chn[:outblock].call(data) if chn[:outblock]
-							chn[:inbuf] << data
-							chn.check_and_send
+							@outblock.call(data) if @outblock
+							@inbuf << data
+							check_and_send(chn)
 						end
-            @extra_init.call(ch) if @extra_init
-						block.call(ch)
+            			@extra_init.call(self) if @extra_init
+						yield self
 					end
 				end
 			end
