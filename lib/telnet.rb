@@ -4,58 +4,64 @@ module Cisco
 
   class Telnet
     
-    attr_accessor :loginpw
-    attr_reader :host
+    attr_accessor :host, :password, :prompt
     
     def initialize(options)
-      @host    = options[:host]
-		  @loginpw = options[:loginpw]
-		  @prompt  = options[:prompt]
-		  @targs   = options[:directargs] || ["Host" => @host]
+		@host    = options[:host]
+		@password = options[:password]
+		@prompt  = options[:prompt] || /[#>]\s?\z/n
+		@targs   = options[:directargs] || ["Host" => @host]
+		@pwprompt = "Password:"
+		@cmdbuf, @extra_init = [], []
     end
 
-    def run(&block)
-      @results, @cmdbuf = [], []
-      @extra_init.call(self) if @extra_init
-      block.call(self)
-      @telnet = Net::Telnet.new(*@targs)
-      login
-      until @cmdbuf.empty?
-        send_next
-        @results << waitfor(@prompt) {|x| @outblock.call(x) if @outblock }
-      end
-      @telnet.close
-      return @results
+    def run
+    	@results = []
+		(@cmdbuf = [] and yield self) if block_given?
+		@cmdbuf.insert(0, *@extra_init) if @extra_init.any?
+		@telnet = Net::Telnet.new(*@targs)
+		login
+		until @cmdbuf.empty?
+			send_next
+			@results << @telnet.waitfor(@prompt) {|x| @outblock.call(x) if @outblock}
+		end
+		return @results
     end
   	
   	def cmd(cmd, prompt = nil, &block)
-  		@cmdbuf << [cmd + "\n", prompt, block]
+  		@cmdbuf << [cmd, prompt, block]
   	end
   	
-  	def enable(password, pwprompt=nil)
-  	  old = @prompt
-      cmd("enable", pwprompt || "Password:")
-      cmd(password, @prompt)
-  	end
+  	def enable(password, pwprompt = nil)
+		@pwprompt = pwprompt || @pwprompt
+		old = @prompt
+		cmd("enable", @pwprompt)
+		cmd(password, old)
+	end
 
-    def extra_init(&block)
-		  @extra_init = block
-		end
+	def extra_init(*args)
+		cmd(*args)
+		@extra_init << @cmdbuf.shift
+	end
+	
+	def clear_init
+		@extra_init = []
+	end
     
     private
     
     def login
-      raise CiscoError.new("No login password provided.") unless @loginpw
-      @results << waitfor(Regexp.new("Password:"))
-      puts(@loginpw)
-      @results << waitfor(@prompt)
+      raise ArgumentError.new("No login password provided.") unless @password
+      @results << @telnet.waitfor(Regexp.new("Password:"))
+      @telnet.puts(@password)
+      @results << @telnet.waitfor(@prompt)
     end
-    
+
     def	send_next
   		cmd = @cmdbuf.shift
   		@prompt = Regexp.new(cmd[1]) if cmd[1]
   		@outblock = cmd[2] if cmd[2]
-  		puts(cmd.first)
+  		@telnet.puts(cmd.first)
   	end
 
   end # class Telnet

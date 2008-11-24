@@ -14,7 +14,7 @@ module Cisco
 		  @prompt  = options[:prompt] || /[#>]\s?\z/n
 		  @sshargs = options[:directargs] || [@host, @user, {:password => @password}]
 		  @pwprompt = "Password:"
-		  @cmdbuf, @results = [], []
+		  @cmdbuf, @extra_init = [], []
 		end
 
 		def cmd(cmd, prompt = nil, &block)
@@ -28,12 +28,18 @@ module Cisco
 			cmd(password, old)
 		end
 		
-		def extra_init(&block)
-		  @extra_init = block
+		def extra_init(*args)
+			cmd(*args)
+			@extra_init << @cmdbuf.shift
+		end
+		
+		def clear_init
+			@extra_init = []
 		end
 		
 		def run
 			@inbuf = ""
+			@results = []
 			@ssh = Net::SSH.start(*@sshargs)
 			@ssh.open_channel do |chan|
 				chan.send_channel_request("shell") do |ch, success|
@@ -45,16 +51,15 @@ module Cisco
 							@inbuf << data
 							check_and_send(chn)
 						end
-						@extra_init.call(self) if @extra_init
 						(@cmdbuf = [] and yield self) if block_given?
+						@cmdbuf.insert(0, *@extra_init) if @extra_init.any?
 					end
 				end
 			end
 			@ssh.loop
-			results = @results
-			@cmdbuf, @results = [], []
-			return results
+			return @results
 		end
+		
 		
 		private
 		
@@ -68,6 +73,7 @@ module Cisco
 					chn.close
 				end
 			elsif (@inbuf =~ Regexp.new(@pwprompt) and @prompt != Regexp.new(@pwprompt))
+				@cmdbuf = []
 				chn.close
 				raise ArgumentError.new("Enable password was not correct.")
 			end
