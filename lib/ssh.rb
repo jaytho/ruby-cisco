@@ -37,6 +37,10 @@ module Cisco
 			@extra_init = []
 		end
 		
+		def clear_cmd
+			@cmdbuf = []
+		end
+		
 		def run
 			@inbuf = ""
 			@results = []
@@ -65,7 +69,7 @@ module Cisco
 		
 		def check_and_send(chn)
 			if @inbuf =~ @prompt
-				@results << @inbuf
+				@results << @inbuf.gsub(Regexp.new("\r\n"), "\n")
 				@inbuf = ""
 				if @cmdbuf.any?
 					send_next(chn)

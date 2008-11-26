@@ -47,6 +47,10 @@ module Cisco
 	def clear_init
 		@extra_init = []
 	end
+	
+	def clear_cmd
+		@cmdbuf = []
+	end
     
     private
     
