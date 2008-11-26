@@ -13,45 +13,31 @@ module Cisco
 
   class Base
     
-    attr_reader :info, :ints, :host, :transport
+    attr_reader :info, :ints, :transport
     
     def initialize(options)
       @transport = options[:transport] || :telnet
       options[:prompt] ||= /[#>]\s?\z/n
-      options[:loginpw] ||= ""
-      @transport = Cisco.const_get(@transport.to_s.capitalize)
-      @transport = @transport.new(options)
+      options[:password] ||= ""
+      @transport = Cisco.const_get(Cisco.constants.find {|const| const =~ Regexp.new(@transport.to_s, Regexp::IGNORECASE)}).new(options)
     end
-    
-    def prompt=(prompt)
-      @transport.prompt = prompt
-    end
-    
-    def prompt
-      @transport.prompt
-    end
-    
-    def loginpw=(pw)
-      @transport.loginpw = pw
-    end
-    
-    def loginpw
-      @transport.loginpw
-    end
-    
-    # This is meant to be redefined in subclasses to send initial commands like 'terminal length 0' upon connecting.
-    def extra_init(&block)
-      @transport.extra_init(block)
-    end
-    
-    def run(&block)
-      @transport.run(&block)
-    end
-    
-    # This closes the transport connection. This should be taken care of at the end of every run() block.
-    def close
-      @transport.close
-    end
+
+	def host
+		@transport.host
+	end
+	
+	def extra_init(*args)
+		@transport.extra_init(*args)
+	end
+	
+	def cmd(*args)
+		@transport.cmd(*args)
+	end
+	
+	def run(&block)
+		@transport.run(&block)
+	end
+
 
   end
   

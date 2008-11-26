@@ -51,7 +51,7 @@ module Cisco
     private
     
     def login
-      raise ArgumentError.new("No login password provided.") unless @password
+      raise CiscoError.new("No login password provided.") unless @password
       @results << @telnet.waitfor(Regexp.new("Password:"))
       @telnet.puts(@password)
       @results << @telnet.waitfor(@prompt)

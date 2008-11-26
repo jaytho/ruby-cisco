@@ -75,7 +75,7 @@ module Cisco
 			elsif (@inbuf =~ Regexp.new(@pwprompt) and @prompt != Regexp.new(@pwprompt))
 				@cmdbuf = []
 				chn.close
-				raise ArgumentError.new("Enable password was not correct.")
+				raise CiscoError.new("Enable password was not correct.")
 			end
 		end
 
