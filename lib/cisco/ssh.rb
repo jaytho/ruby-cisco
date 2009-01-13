@@ -1,44 +1,23 @@
-require 'rubygems'
 require 'net/ssh'
 
 module Cisco
 
 	class SSH
-	
-		attr_accessor :prompt, :password, :host
+	  
+	  include Common
 	
 		def initialize(options)
 		  @host    = options[:host]
 		  @user    = options[:user]
 		  @password = options[:password]
-		  @prompt  = options[:prompt] || /[#>]\s?\z/n
-		  @sshargs = options[:directargs] || [@host, @user, {:password => @password}]
-		  @pwprompt = "Password:"
+		  @prompt  = options[:prompt]
+		  @sshargs = options[:directargs] || [@host, @user, {:password => @password, :auth_methods => ["password"]}]
+		  @pwprompt = options[:pwprompt] || "Password:"
 		  @cmdbuf, @extra_init = [], []
 		end
-
-		def cmd(cmd, prompt = nil, &block)
+   	
+   	def cmd(cmd, prompt = nil, &block)
 			@cmdbuf << [cmd + "\n", prompt, block]
-		end
-		
-		def enable(password, pwprompt = nil)
-			@pwprompt = pwprompt || @pwprompt
-			old = @prompt
-			cmd("enable", @pwprompt)
-			cmd(password, old)
-		end
-		
-		def extra_init(*args)
-			cmd(*args)
-			@extra_init << @cmdbuf.shift
-		end
-		
-		def clear_init
-			@extra_init = []
-		end
-		
-		def clear_cmd
-			@cmdbuf = []
 		end
 		
 		def run
@@ -61,12 +40,21 @@ module Cisco
 				end
 			end
 			@ssh.loop
-			return @results
+			
+			@results
 		end
 		
+		# Disconnect the session. Either Net::SSH has a bug, or the Cisco implementation is sometimes whacky,
+		# causing an exception to be thrown when trying to close the channel via the SSH protocol. To get around
+		# this, this method simply sends "exit" until the device disconnects us.
+		def close(chn)
+      10.times do
+        chn.send_data("exit\n") unless (!chn.active? || chn.closing?)
+      end
+    end
 		
 		private
-		
+				
 		def check_and_send(chn)
 			if @inbuf =~ @prompt
 				@results << @inbuf.gsub(Regexp.new("\r\n"), "\n")
@@ -74,11 +62,11 @@ module Cisco
 				if @cmdbuf.any?
 					send_next(chn)
 				else
-					chn.close
+					close(chn)
 				end
 			elsif (@inbuf =~ Regexp.new(@pwprompt) and @prompt != Regexp.new(@pwprompt))
 				@cmdbuf = []
-				chn.close
+				close(chn)
 				raise CiscoError.new("Enable password was not correct.")
 			end
 		end
@@ -90,6 +78,6 @@ module Cisco
 			chn.send_data(cmd.first)
 		end
 
-	end # class SSH
+	end
 	
-end # module Cisco
+end

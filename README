@@ -1,0 +1,66 @@
+Ruby-Cisco
+==========
+This tool aims to provide transport-flexible functionality, for easy communication
+with Cisco devices. It currently allows you to execute commands on a device and get
+back the output of those commands.
+
+The library provides two styles to use:
+
+cisco = Cisco::Base.new(:host => "10.0.0.1", :password => "accesspass")
+cisco.cmd("sh ver")
+cisco.enable("enablepass")
+cisco.cmd("sh run")
+output = cisco.run
+
+This will return an array of results, one string for the output of each command. The
+following block style usage returns the same results, though some may prefer it:
+
+output = cisco.run do |x|
+	x.cmd("sh ver")
+	x.enable("enablepass")
+	x.cmd("sh run")
+end
+
+SSH and Telnet should be working OK at this time. Unfortunately due to the asynchronous
+design of the Net::SSH library's API, it is not easy to provide an interface for
+operating conditionally on output data in the middle of a session like you may be
+used to, for example:
+
+output = device.cmd("show version")
+if output =~ "IOS"
+	device.cmd("run some ios command")
+else
+	device.cmd("run some catos command")
+end
+
+Similar behavior could be achieved by setting up the SSH session yourself. You can peek
+at the #run method in ssh.rb for how to do this. Instead, the interface of this library 
+allows you to simply execute a series of commands all in one run, and get the output at 
+the end. I have limited the synchronous advantage of Net::Telnet by conforming it to this
+model, but I wanted to have them both be used in the same fashion.
+
+The Base class should be used unless you know what you're doing and what I have provided
+is not adequate. Telnet is used by default. To use SSH, you must specify:
+
+cisco = Cisco::Base.new(:host => "10.0.0.1", :user => "admin", :password => "accesspass", :transport => :ssh)
+
+You can also pass an array of direct arguments that are used to instantiate the transport object. 
+This is useful, if for instance, you want to use public key authentication with SSH:
+
+cisco = Cisco::Base.new(:directargs => ["10.0.0.1", "admin", :auth_methods => ["publickey"]])
+
+In the future, I would like to provide subclasses to retrieve, present and set configuration 
+parameters in an OO fashion, like:
+
+router.int["fa0/4"].speed
+=> 100
+router.int["fa0/4"].speed = 10
+router.apply!
+
+I have yet to come up with a good way for implementing this that will scale across
+a wide variety of devices. Please let me know if you have input and want to help.
+
+jakecdouglas@gmail.com
+yakischloba on Freenode
+
+Thanks to Jamis Buck for creating Net::SSH and helping me understand how to do this.
