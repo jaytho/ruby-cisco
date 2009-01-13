@@ -4,6 +4,13 @@ This tool aims to provide transport-flexible functionality, for easy communicati
 with Cisco devices. It currently allows you to execute commands on a device and get
 back the output of those commands.
 
+To install:
+
+git clone git://github.com/yakischloba/ruby-cisco.git
+cd ruby-cisco
+gem build cisco.gemspec
+sudo gem install cisco-<version>.gem
+
 The library provides two styles to use:
 
 cisco = Cisco::Base.new(:host => "10.0.0.1", :password => "accesspass")
